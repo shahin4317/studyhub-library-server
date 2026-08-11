@@ -21,39 +21,55 @@ const client = new MongoClient(uri, {
   },
 });
 
-async function run() {
-  try {
-    // Connect the client to the server (optional starting in v4.7)
-    await client.connect();
-    const db = client.db("studyhubdb")
-    const roomsCollection = db.collection('rooms')
+const logger = (req, res, next) => {
+  console.log(`${req.method} | {req.url}`);
+  next()
+}
+const varifyToken = async(req,res,next)=>{
+  const {authorization} = req.headers 
+  const token = authorization?.split(" ")[1]
+  console.log(token);
+  next()
+}
 
-    app.get('/rooms', async(req,res)=>{
+
+  async function run() {
+    try {
+      // Connect the client to the server (optional starting in v4.7)
+      await client.connect();
+      const db = client.db("studyhubdb")
+      const roomsCollection = db.collection('rooms')
+
+      app.get('/rooms', async (req, res) => {
         const result = await roomsCollection.find().toArray()
         res.send(result)
-    })
+      })
 
-    app.get('/rooms/:id', async(req,res)=>{
-        const {id}= req.params
-        const result = await roomsCollection.findOne({_id: new ObjectId(id)})
-        res.send(result)
-    })
+      app.get('/rooms/:id',
+        logger,
+        varifyToken,
+
+        async (req, res) => {
+          const { id } = req.params
+          const result = await roomsCollection.findOne({ _id: new ObjectId(id) })
+          res.send(result)
+        })
 
 
 
 
 
-    // Send a ping to confirm a successful connection
-    const result = await client.db('admin').command({ ping: 1 });
-    console.log(
-      'Pinged your deployment. You successfully connected to MongoDB!'
-    );
-    return result;
-  } finally {
-    // Ensures that the client will close when you finish/error
-    // await client.close();
+      // Send a ping to confirm a successful connection
+      const result = await client.db('admin').command({ ping: 1 });
+      console.log(
+        'Pinged your deployment. You successfully connected to MongoDB!'
+      );
+      return result;
+    } finally {
+      // Ensures that the client will close when you finish/error
+      // await client.close();
+    }
   }
-}
 run().catch(console.dir);
 
 
