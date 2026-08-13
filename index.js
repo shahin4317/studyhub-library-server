@@ -160,6 +160,12 @@ async function run() {
     res.send(result)
 
     })
+    // for delete
+    app.delete('/rooms/:id', async(req,res) => {
+      const {id} = req.params
+      const result = await roomsCollection.deleteOne({_id:new ObjectId(id)})
+      res.send(result)
+    })
 
 
 
