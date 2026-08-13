@@ -66,6 +66,7 @@ async function run() {
     await client.connect();
     const db = client.db("studyhubdb")
     const roomsCollection = db.collection('rooms')
+    const bookingCollection = db.collection('bookkings')
 
     app.get('/rooms', async (req, res) => {
       try {
@@ -132,7 +133,7 @@ async function run() {
       }
 
     })
-// for my listing
+    // for my listing
     app.get('/my-rooms', async (req, res) => {
       try {
         const ownerId = req.query.ownerId;
@@ -151,20 +152,27 @@ async function run() {
       }
     });
     // for edit page 
-    app.patch('/rooms/:id', async(req,res) =>{
-      const {id} = req.params
+    app.patch('/rooms/:id', async (req, res) => {
+      const { id } = req.params
       const edit = req.body
-      const result = await roomsCollection.updateOne({_id: new ObjectId(id)},
-      {$set: edit}
-    )
-    res.send(result)
+      const result = await roomsCollection.updateOne({ _id: new ObjectId(id) },
+        { $set: edit }
+      )
+      res.send(result)
 
     })
     // for delete
-    app.delete('/rooms/:id', async(req,res) => {
-      const {id} = req.params
-      const result = await roomsCollection.deleteOne({_id:new ObjectId(id)})
+    app.delete('/rooms/:id', async (req, res) => {
+      const { id } = req.params
+      const result = await roomsCollection.deleteOne({ _id: new ObjectId(id) })
       res.send(result)
+    })
+
+    app.post('/bookings', async (req, res) => {
+      const bookingdata = req.body
+      const result = await bookingCollection.insertOne(bookingdata)
+      res.json(result)
+
     })
 
 
