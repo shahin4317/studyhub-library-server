@@ -175,6 +175,64 @@ async function run() {
 
     })
 
+    app.get('/bookings', async (req, res) => {
+      try {
+        const userId = req.query.userId;
+
+        const result = await bookingCollection
+          .find({ userId: userId })
+          .toArray();
+
+        res.send(result);
+
+      } catch (error) {
+        res.status(500).send({
+          message: "Failed to fetch bookings",
+          error: error.message
+        });
+      }
+    });
+
+    app.patch('/bookings/:id/cancel', async (req, res) => {
+  try {
+
+    const { id } = req.params;
+
+    const result = await bookingCollection.updateOne(
+      {
+        _id: new ObjectId(id),
+        status: "confirmed"
+      },
+      {
+        $set: {
+          status: "cancelled"
+        }
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        message: "Booking not found"
+      });
+    }
+
+    res.json({
+      message: "Booking cancelled successfully",
+      result
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      message: "Failed to cancel booking",
+      error: error.message
+    });
+
+  }
+});
+
 
 
 
