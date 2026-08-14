@@ -70,39 +70,75 @@ async function run() {
 
     app.get('/rooms', async (req, res) => {
       try {
-        const search = req.query.search
-        let query = {}
+        const {
+          search,
+          amenities,
+          minPrice,
+          maxPrice,
+          floor
+        } = req.query;
+
+        const query = {};
+
+        // Search by room name
         if (search) {
-          query = {
-            $or: [
-              {
-                name: {
-                  $regex: search,
-                  $options: 'i'
-                }
-              },
-              {
-                floor: {
-                  $regex: search,
-                  $options: 'i'
-                }
-              }
-            ]
+          query.name = {
+            $regex: search,
+            $options: "i"
+          };
+        }
+
+        // Amenities filter
+        if (amenities) {
+          const amenitiesArray = amenities
+            .split(",")
+            .filter(Boolean);
+
+          if (amenitiesArray.length > 0) {
+            query.amenities = {
+              $in: amenitiesArray
+            };
           }
         }
-        const result = await roomsCollection.find(query).toArray()
-        res.send(result)
+
+        // Price filter
+        if (minPrice || maxPrice) {
+          query.hourlyRate = {};
+
+          if (minPrice) {
+            query.hourlyRate.$gte = Number(minPrice);
+          }
+
+          if (maxPrice) {
+            query.hourlyRate.$lte = Number(maxPrice);
+          }
+        }
+
+        // Floor filter
+        if (floor) {
+          query.floor = {
+            $regex: floor,
+            $options: "i"
+          };
+        }
+
+        console.log("Room Query:", query);
+
+        const result = await roomsCollection
+          .find(query)
+          .toArray();
+
+        res.status(200).json(result);
 
       } catch (error) {
-        res.status(500).send({
-          message: "Faield to fetch rooms",
+        console.error(error);
+
+        res.status(500).json({
+          message: "Failed to fetch rooms",
           error: error.message
-        })
-
+        });
       }
-
-
-    })
+    });
 
     app.get('/rooms/:id',
       logger,
@@ -175,6 +211,8 @@ async function run() {
 
     })
 
+
+
     app.get('/bookings', async (req, res) => {
       try {
         const userId = req.query.userId;
@@ -194,44 +232,44 @@ async function run() {
     });
 
     app.patch('/bookings/:id/cancel', async (req, res) => {
-  try {
+      try {
 
-    const { id } = req.params;
+        const { id } = req.params;
 
-    const result = await bookingCollection.updateOne(
-      {
-        _id: new ObjectId(id),
-        status: "confirmed"
-      },
-      {
-        $set: {
-          status: "cancelled"
+        const result = await bookingCollection.updateOne(
+          {
+            _id: new ObjectId(id),
+            status: "confirmed"
+          },
+          {
+            $set: {
+              status: "cancelled"
+            }
+          }
+        );
+
+        if (result.matchedCount === 0) {
+          return res.status(404).json({
+            message: "Booking not found"
+          });
         }
+
+        res.json({
+          message: "Booking cancelled successfully",
+          result
+        });
+
+      } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+          message: "Failed to cancel booking",
+          error: error.message
+        });
+
       }
-    );
-
-    if (result.matchedCount === 0) {
-      return res.status(404).json({
-        message: "Booking not found"
-      });
-    }
-
-    res.json({
-      message: "Booking cancelled successfully",
-      result
     });
-
-  } catch (error) {
-
-    console.error(error);
-
-    res.status(500).json({
-      message: "Failed to cancel booking",
-      error: error.message
-    });
-
-  }
-});
 
 
 
